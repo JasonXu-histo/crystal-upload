@@ -110,10 +110,6 @@ import { getSignature, saveResourceInfo, preCheck } from './api'
 export default {
   name: 'CrystalUpload',
   props: {
-    accessId: {
-      type: String,
-      required: true
-    },
     mode: {
       type: String,
       required: true

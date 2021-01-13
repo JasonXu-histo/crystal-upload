@@ -14,9 +14,8 @@ Vue.use(CrystalUpload)
 
 # in components
 # development for dev   production for prod
-# access-id for 应用Id  eg: SMART_PATH for smart-path应用
 <template>
-  <crystal-upload mode="development" access-id="id"></crystal-upload>
+  <crystal-upload mode="development"></crystal-upload>
 </template>
 
 

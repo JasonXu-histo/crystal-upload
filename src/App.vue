@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <crystal-upload mode="development" access-id="SMART_PATH"></crystal-upload>
+    <crystal-upload mode="development"></crystal-upload>
   </div>
 </template>
 
