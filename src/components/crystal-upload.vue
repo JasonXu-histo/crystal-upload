@@ -21,9 +21,32 @@
       <el-button type="danger" @click="startUpload">开始上传</el-button>
     </section>
     <section class="content">
-      <el-table
+      <i-table border :columns="columns" :data="fileList">
+        <template slot-scope="{ row }" slot="status">
+          <i class="el-icon" :class="getStateIcon(row)" />
+        </template>
+        <template slot-scope="{ row }" slot="name">
+          <el-input v-model="row.fileName" placeholder="不能为空" />
+        </template>
+        <template slot-scope="{ row }" slot="progress">
+          <el-progress v-if="!row.message" :percentage="row.process" :status="processStatus(row)" />
+          <span v-else style="color: #F56C6C">{{ row.message }}</span>
+        </template>
+        <template slot-scope="{ row, index }" slot="action">
+          <el-button
+              v-show="row.state !== 2"
+              type="text"
+              size="small"
+              @click.native.prevent="deleteRow(index)"
+            >
+              移除
+            </el-button>
+        </template>
+      </i-table>
+      <!-- <el-table
         :data="fileList"
-        empty-text="暂无文件"
+        fit
+        border
       >
         <el-table-column
           label="状态"
@@ -45,11 +68,11 @@
           label="原文件名称"
           width="300"
           prop="originFileName"
-        />
+        ></el-table-column>
         <el-table-column
           prop="filepath"
           label="文件路径"
-        />
+        ></el-table-column>
         <el-table-column
           label="上传进度"
         >
@@ -65,7 +88,7 @@
         >
           <template slot-scope="scope">
             <el-button
-              v-show="scope.state !== 2 || scope.row.fileExist"
+              v-show="scope.row.state !== 2"
               type="text"
               size="small"
               @click.native.prevent="deleteRow(scope.$index)"
@@ -74,7 +97,7 @@
             </el-button>
           </template>
         </el-table-column>
-      </el-table>
+      </el-table> -->
     </section>
   </div>
 </template>
@@ -83,7 +106,7 @@
 import axios from 'axios'
 import SparkMD5 from 'spark-md5'
 const api = require('./baseApi.json')
-import { getSignature } from './api'
+import { getSignature, saveResourceInfo, preCheck } from './api'
 export default {
   name: 'CrystalUpload',
   props: {
@@ -94,14 +117,39 @@ export default {
     mode: {
       type: String,
       required: true
-    },
-    token: {
-      type: String,
-      required: true
     }
   },
   data() {
     return {
+      columns: [
+        {
+          title: '状态',
+          width: 67,
+          slot: 'status'
+        },
+        {
+          title: '文件名称',
+          width: 300,
+          slot: 'name'
+        },
+        {
+          title: '原文件名称',
+          width: 300,
+          key: 'originFileName'
+        },
+        {
+          title: '文件路径',
+          key: 'filepath'
+        },
+        {
+          title: '上传进度',
+          slot: 'progress'
+        },
+        {
+          title: '操作',
+          slot: 'action'
+        }
+      ],
       fileList: [],
       visible: false,
       fileIndex: 0,
@@ -115,9 +163,7 @@ export default {
     }
   },
   mounted() {
-    this.getSignature().then(res => {
-      console.log(res)
-    })
+    
   },
   methods: {
     handleBeforeUpload(event) {
@@ -194,7 +240,7 @@ export default {
                   md5: res,
                   path: m.path
                 }
-                preCheck(data).then(res => {
+                preCheck(this.apiObject.baseUrl + this.apiObject.prepUrl, data).then(res => {
                   const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
                   if (!res.data) {
                     obj.message = res.message
@@ -227,7 +273,7 @@ export default {
                 md5: res,
                 path: this.signatureData.path
               }
-              preCheck(data).then(res => {
+              preCheck(this.apiObject.baseUrl + this.apiObject.prepUrl, data).then(res => {
                 const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
                 if (!res.data) {
                   obj.message = res.message
@@ -320,7 +366,7 @@ export default {
             globalId: file.globalId,
             result: 1
           }
-          saveResourceInfo(resourceInfo).then(() => {
+          saveResourceInfo(this.apiObject.baseUrl + this.apiObject.completeUrl, resourceInfo).then(() => {
             file.process = 100
             file.state = 2
             file.filepath = data.url + '/' + data.key + '/' + data.name
@@ -333,7 +379,7 @@ export default {
             globalId: file.globalId,
             result: 0
           }
-          saveResourceInfo(resourceInfo).then(() => {
+          saveResourceInfo(this.apiObject.baseUrl + this.apiObject.completeUrl, resourceInfo).then(() => {
             file.state = 3
           })
         }
@@ -342,7 +388,7 @@ export default {
           globalId: file.globalId,
           result: 0
         }
-        saveResourceInfo(resourceInfo).then(() => {
+        saveResourceInfo(this.apiObject.baseUrl + this.apiObject.completeUrl, resourceInfo).then(() => {
           file.state = 3
         })
       })

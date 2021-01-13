@@ -13,8 +13,11 @@ export default {
   },
   data () {
     return {
-      
+      token: '4b4cd993b99cb72c09cca794fbee0d82'
     }
+  },
+  created() {
+    window.localStorage.setItem('crystal-token', this.token) 
   }
 }
 </script>

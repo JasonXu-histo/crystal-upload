@@ -2,18 +2,24 @@
   "name": "crystal-upload",
   "description": "crystal upload plugin",
   "version": "1.0.0",
-  "author": "JasonXu-histo <xuning@histomed.com>",
+  "author": "xuningjason <xuning@histomed.com>",
   "license": "MIT",
-  "private": true,
+  "private": false,
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --hot",
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
+  "main": "dist/crystal-upload.min.js",
+  "files": [
+    "dist",
+    "src/components"
+  ],
   "dependencies": {
     "axios": "^0.21.1",
     "babel-polyfill": "^6.26.0",
     "element-ui": "^2.14.1",
     "spark-md5": "^3.0.1",
+    "view-design": "^4.5.0-beta.1",
     "vue": "^2.5.11"
   },
   "browserslist": [
