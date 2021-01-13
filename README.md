@@ -8,11 +8,18 @@
 # install dependencies
 npm install
 
-# serve with hot reload at localhost:8080
-npm run dev
+# in main.js
+import CrystalUpload from 'crystal-upload'
+Vue.use(CrystalUpload)
 
-# build for production with minification
-npm run build
+# in components
+# development for dev   production for prod
+# access-id for 应用Id  eg: SMART_PATH for smart-path应用
+<template>
+  <crystal-upload mode="development" access-id="id"></crystal-upload>
+</template>
+
+
 ```
 
 For detailed explanation on how things work, consult the [docs for vue-loader](http://vuejs.github.io/vue-loader).
