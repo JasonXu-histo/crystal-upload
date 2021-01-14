@@ -4,8 +4,9 @@ import { Message } from 'element-ui'
 const request = axios.create()
 request.interceptors.request.use(config => {
   if (window.localStorage.getItem('crystal-token')) {
-    config.headers['crystal-token'] = window.localStorage.getItem('crystal-token')
+    config.headers['token'] = window.localStorage.getItem('crystal-token')
   }
+  config.headers['access-id'] = window.localStorage.getItem('access-id')
   return config
 },
 error => {
@@ -15,6 +16,14 @@ error => {
 request.interceptors.response.use(
   response => {
     const res = response.data
+    if (res.code !== 200) {
+      Message({
+        message: res.message,
+        type: 'error',
+        duration: '3000'
+      })
+      return Promise.reject(res)
+    }
     return res
   },
   error => {

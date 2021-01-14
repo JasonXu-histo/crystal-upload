@@ -43,61 +43,6 @@
             </el-button>
         </template>
       </i-table>
-      <!-- <el-table
-        :data="fileList"
-        fit
-        border
-      >
-        <el-table-column
-          label="状态"
-          width="50"
-        >
-          <template slot-scope="scope">
-            <i :class="getStateIcon(scope.row)" />
-          </template>
-        </el-table-column>
-        <el-table-column
-          label="文件名称"
-          width="300"
-        >
-          <template slot-scope="scope">
-            <el-input v-model="scope.row.fileName" placeholder="不能为空" />
-          </template>
-        </el-table-column>
-        <el-table-column
-          label="原文件名称"
-          width="300"
-          prop="originFileName"
-        ></el-table-column>
-        <el-table-column
-          prop="filepath"
-          label="文件路径"
-        ></el-table-column>
-        <el-table-column
-          label="上传进度"
-        >
-          <template slot-scope="scope">
-            <el-progress v-if="!scope.row.message" :percentage="scope.row.process" :status="processStatus(scope.row)" />
-            <span v-else style="color: #F56C6C">{{ scope.row.message }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column
-          fixed="right"
-          label="操作"
-          width="120"
-        >
-          <template slot-scope="scope">
-            <el-button
-              v-show="scope.row.state !== 2"
-              type="text"
-              size="small"
-              @click.native.prevent="deleteRow(scope.$index)"
-            >
-              移除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table> -->
     </section>
   </div>
 </template>
@@ -175,7 +120,6 @@ export default {
           state: 0
         }
         this.fileList.push(singleFile)
-        console.log(this.fileList)
       }
       this.$nextTick(_ => {
         this.$refs.fileInput.value = null
@@ -225,8 +169,6 @@ export default {
         }
         if (this.fileIndex < this.fileList.length) {
           const file = this.fileList[this.fileIndex]
-          console.log(this.fileIndex)
-          console.log(file)
           this.getMD5(file.file).then(res => {
             if (!this.signatureData || this.signatureData.expire <= new Date().getTime()) {
               this.getSignature().then(m => {
@@ -240,6 +182,7 @@ export default {
                   const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
                   if (!res.data) {
                     obj.message = res.message
+                    file.globalId = res.data.slide.globalId
                     this.$set(this.fileList, this.fileIndex, obj)
                     this.fileIndex += 1
                     this.startUpload()
@@ -247,14 +190,25 @@ export default {
                     if (res.data.hasUpload) {
                       obj.message = '该切片已上传，请勿重复上传'
                       obj.filepath = res.data.slide.outerFilepath
+                      obj.globalId = res.data.slide.globalId
                       this.$set(this.fileList, this.fileIndex, obj)
+                      this.fileList[this.fileIndex].globalId = obj.globalId
                       this.fileIndex += 1
+                      if (this.fileIndex === this.fileList.length) {
+                        const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
+                        this.$emit('getGlobalId', globalIdList)
+                      }
                       this.startUpload()
                     } else {
                       file.globalId = res.data.slide.globalId
+                      this.fileList[this.fileIndex].globalId = file.globalId
                       this.frontUpload(file, res.data.slide.objectKey, m => {
                         if (m === 100) {
                           this.fileIndex += 1
+                          if (this.fileIndex === this.fileList.length) {
+                            const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
+                            this.$emit('getGlobalId', globalIdList)
+                          }
                           this.startUpload()
                         }
                       })
@@ -273,26 +227,39 @@ export default {
                 const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
                 if (!res.data) {
                   obj.message = res.message
+                  file.globalId = res.data.slide.globalId
                   this.$set(this.fileList, this.fileIndex, obj)
                   this.fileIndex += 1
                   this.startUpload()
                 } else {
                   if (res.data.hasUpload) {
                     obj.message = '该切片已上传，请勿重复上传'
+                    obj.globalId = res.data.slide.globalId
                     obj.filepath = res.data.slide.outerFilepath
                     this.$set(this.fileList, this.fileIndex, obj)
+                    this.fileList[this.fileIndex].globalId = obj.globalId
                     this.fileIndex += 1
+                    if (this.fileIndex === this.fileList.length) {
+                      const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
+                      this.$emit('getGlobalId', globalIdList)
+                    }
                     this.startUpload()
                   } else {
                     file.globalId = res.data.slide.globalId
+                    this.fileList[this.fileIndex].globalId = file.globalId
                     this.frontUpload(file, res.data.slide.objectKey, m => {
                       if (m === 100) {
                         this.fileIndex += 1
+                        if (this.fileIndex === this.fileList.length) {
+                          const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
+                          this.$emit('getGlobalId', globalIdList)
+                        }
                         this.startUpload()
                       }
                     })
                   }
                 }
+                
               })
             }
           })
