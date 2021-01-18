@@ -22,7 +22,6 @@ request.interceptors.response.use(
         type: 'error',
         duration: '3000'
       })
-      return Promise.reject(res)
     }
     return res
   },
@@ -52,6 +51,22 @@ export const preCheck = (url, data) => {
 }
 
 export const saveResourceInfo = (url, params) => {
+  return request({
+    url,
+    method: 'get',
+    params
+  })
+}
+
+export const localPrepCheck = (url, data) => {
+  return request({
+    url,
+    method: 'post',
+    data
+  })
+}
+
+export const localComplete = (url, params) => {
   return request({
     url,
     method: 'get',

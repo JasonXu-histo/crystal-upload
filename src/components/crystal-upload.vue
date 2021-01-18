@@ -32,16 +32,6 @@
           <el-progress v-if="!row.message" :percentage="row.process" :status="processStatus(row)" />
           <span v-else style="color: #F56C6C">{{ row.message }}</span>
         </template>
-        <template slot-scope="{ row, index }" slot="action">
-          <el-button
-              v-show="row.state !== 2"
-              type="text"
-              size="small"
-              @click.native.prevent="deleteRow(index)"
-            >
-              移除
-            </el-button>
-        </template>
       </i-table>
     </section>
   </div>
@@ -51,13 +41,18 @@
 import axios from 'axios'
 import SparkMD5 from 'spark-md5'
 const api = require('./baseApi.json')
-import { getSignature, saveResourceInfo, preCheck } from './api'
+import { getSignature, saveResourceInfo, preCheck, localPrepCheck, localComplete } from './api'
 export default {
   name: 'CrystalUpload',
   props: {
     mode: {
       type: String,
       required: true
+    },
+    needLocal: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   data() {
@@ -65,37 +60,41 @@ export default {
       columns: [
         {
           title: '状态',
-          width: 67,
+          width: 80,
           slot: 'status'
         },
         {
           title: '文件名称',
-          width: 300,
+          width: 150,
           slot: 'name'
         },
         {
           title: '原文件名称',
-          width: 300,
-          key: 'originFileName'
+          width: 150,
+          key: 'originFileName',
+          tooltip: true
         },
         {
           title: '文件路径',
-          key: 'filepath'
+          key: 'filepath',
+          width: 150,
+          tooltip: true
         },
         {
           title: '上传进度',
           slot: 'progress'
         },
-        {
-          title: '操作',
-          slot: 'action'
-        }
+        // {
+        //   title: '操作',
+        //   slot: 'action'
+        // }
       ],
       fileList: [],
       visible: false,
       fileIndex: 0,
       signatureData: null,
-      fileTypes: ['.kfb', '.mdsx', '.sdpc']
+      fileTypes: ['.kfb', '.mdsx', '.sdpc'],
+      slideSize: 5 * 1024 * 1024
     }
   },
   computed: {
@@ -170,27 +169,202 @@ export default {
         if (this.fileIndex < this.fileList.length) {
           const file = this.fileList[this.fileIndex]
           this.getMD5(file.file).then(res => {
-            if (!this.signatureData || this.signatureData.expire <= new Date().getTime()) {
-              this.getSignature().then(m => {
+            if (this.needLocal) {
+              const data = {
+                fileName: file.fileName,
+                fileSize: file.size,
+                md5: res
+              }
+              localPrepCheck(this.apiObject.baseUrl + this.apiObject.localPrepUrl, data).then(mn => {
+                const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
+                if (!mn.data) {
+                  obj.message = mn.message
+                  this.$set(this.fileList, this.fileIndex, obj)
+                  this.fileIndex += 1
+                  this.startUpload()
+                } else {
+                  if (mn.data.hasUpload) {
+                    obj.message = '该切片已上传，请勿重复上传'
+                    obj.globalId = mn.data.globalId
+                    this.$set(this.fileList, this.fileIndex, obj)
+                    this.fileList[this.fileIndex].globalId = obj.globalId
+                    this.fileIndex += 1
+                    if (this.fileIndex === this.fileList.length) {
+                      const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId) { return nm.globalId}})))
+                      this.$emit('getGlobalId', globalIdList)
+                    }
+                    this.startUpload()
+                  } else {
+                    file.globalId = mn.data.globalId
+                    this.fileList[this.fileIndex].globalId = file.globalId
+                    const slideLength = Math.ceil(file.size / this.slideSize)
+                    if (mn.data.partNumbers && mn.data.partNumbers.length > 0) {
+                      let arr = []
+                      for(let i = 0; i < slideLength; i ++) {
+                        arr.push(i)
+                      }
+                      const newArr = arr.filter(item => !mn.data.partNumbers.includes(item + 1))
+                      axios.all(newArr.map(ele => {
+                        const start = (ele - 1) * this.slideSize
+                        const end = Math.min(file.size, start + this.slideSize)
+                        const formData = new FormData()
+                        formData.append('file', file.file.slice(start, end))
+                        formData.append('globalId', mn.data.globalId)
+                        formData.append('partNumber', ele)
+                        let partSize = this.slideSize
+                        if (ele === slideLength - 1) {
+                          partSize = end - start
+                        }
+                        formData.append('partSize', partSize)
+                        formData.append('startPos', start)
+                        return axios({
+                          url: this.apiObject.baseUrl + this.apiObject.localUploadUrl,
+                          method: 'post',
+                          data: formData,
+                          headers: {
+                            'Content-Type': 'multipart/form-data',
+                            'token': window.localStorage.getItem('crystal-token'),
+                            'access-id': window.localStorage.getItem('access-id')
+                          },
+                        }).then( res =>{
+                          if(res.data.code === 200) {
+                            file.process += processItem
+                          }
+                        })
+                      })).then(res => {
+                        const params = {
+                          globalId: file.globalId,
+                          result: 1
+                        }
+                        localComplete(this.apiObject.baseUrl + this.apiObject.localCompleteUrl, params).then(res =>{
+                          file.state = 2
+                          this.fileIndex += 1
+                          if(this.fileIndex === this.fileList.length) {
+                            const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId) { return nm.globalId}})))
+                            this.$emit('getGlobalId', globalIdList)
+                          }
+                          this.startUpload()
+                        })
+                      })
+                    } else {
+                      let arr = []
+                      for(let i = 0; i < slideLength; i ++) {
+                        arr.push(i)
+                      }
+                      const processItem = Math.round(100 / slideLength * 100) / 100
+                      axios.all(arr.map(ele => {
+                        const start = ele * this.slideSize
+                        const end = Math.min(file.size, start + this.slideSize)
+                        const formData = new FormData()
+                        formData.append('file', file.file.slice(start, end))
+                        formData.append('globalId', mn.data.globalId)
+                        formData.append('partNumber', ele + 1)
+                        let partSize = this.slideSize
+                        if (ele === slideLength - 1) {
+                          partSize = end - start
+                        }
+                        formData.append('partSize', partSize)
+                        formData.append('startPos', start)
+                        return axios({
+                          url: this.apiObject.baseUrl + this.apiObject.localUploadUrl,
+                          method: 'post',
+                          data: formData,
+                          headers: {
+                            'Content-Type': 'multipart/form-data',
+                            'token': window.localStorage.getItem('crystal-token'),
+                            'access-id': window.localStorage.getItem('access-id')
+                          }
+                        }).then(res => {
+                          if(res.data.code === 200) {
+                            file.process += processItem
+                          }
+                        })
+                      })).then(res => {
+                        const params = {
+                          globalId: file.globalId,
+                          result: 1
+                        }
+                        localComplete(this.apiObject.baseUrl + this.apiObject.localCompleteUrl, params).then(res =>{
+                          file.state = 2
+                          this.fileIndex += 1
+                          if(this.fileIndex === this.fileList.length) {
+                            const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId) { return nm.globalId}})))
+                            this.$emit('getGlobalId', globalIdList)
+                          }
+                          this.startUpload()
+                        })
+                      })
+                    }
+                  }
+                }
+              })
+            } else {
+              if (!this.signatureData || this.signatureData.expire <= new Date().getTime()) {
+                this.getSignature().then(m => {
+                  const data = {
+                    fileName: file.fileName,
+                    fileSize: file.size,
+                    md5: res,
+                    path: m.path
+                  }
+                  preCheck(this.apiObject.baseUrl + this.apiObject.prepUrl, data).then(mn => {
+                    const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
+                    if (!mn.data) {
+                      obj.message = mn.message
+                      file.globalId = mn.data.slide.globalId
+                      this.$set(this.fileList, this.fileIndex, obj)
+                      this.fileIndex += 1
+                      this.startUpload()
+                    } else {
+                      if (mn.data.hasUpload) {
+                        obj.message = '该切片已上传，请勿重复上传'
+                        obj.filepath = mn.data.slide.outerFilepath
+                        obj.globalId = mn.data.slide.globalId
+                        this.$set(this.fileList, this.fileIndex, obj)
+                        this.fileList[this.fileIndex].globalId = obj.globalId
+                        this.fileIndex += 1
+                        if (this.fileIndex === this.fileList.length) {
+                          const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
+                          this.$emit('getGlobalId', globalIdList)
+                        }
+                        this.startUpload()
+                      } else {
+                        file.globalId = mn.data.slide.globalId
+                        this.fileList[this.fileIndex].globalId = file.globalId
+                        this.frontUpload(file, mn.data.slide.objectKey, m => {
+                          if (m === 100) {
+                            this.fileIndex += 1
+                            if (this.fileIndex === this.fileList.length) {
+                              const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
+                              this.$emit('getGlobalId', globalIdList)
+                            }
+                            this.startUpload()
+                          }
+                        })
+                      }
+                    }
+                  })
+                })
+              } else {
                 const data = {
                   fileName: file.fileName,
                   fileSize: file.size,
                   md5: res,
-                  path: m.path
+                  path: this.signatureData.path
                 }
-                preCheck(this.apiObject.baseUrl + this.apiObject.prepUrl, data).then(res => {
+                preCheck(this.apiObject.baseUrl + this.apiObject.prepUrl, data).then(mn => {
                   const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
-                  if (!res.data) {
-                    obj.message = res.message
-                    file.globalId = res.data.slide.globalId
+                  if (!mn.data) {
+                    obj.message = mn.message
+                    file.globalId = mn.data.slide.globalId
                     this.$set(this.fileList, this.fileIndex, obj)
                     this.fileIndex += 1
                     this.startUpload()
                   } else {
-                    if (res.data.hasUpload) {
+                    if (mn.data.hasUpload) {
                       obj.message = '该切片已上传，请勿重复上传'
-                      obj.filepath = res.data.slide.outerFilepath
-                      obj.globalId = res.data.slide.globalId
+                      obj.globalId = mn.data.slide.globalId
+                      obj.filepath = mn.data.slide.outerFilepath
                       this.$set(this.fileList, this.fileIndex, obj)
                       this.fileList[this.fileIndex].globalId = obj.globalId
                       this.fileIndex += 1
@@ -200,9 +374,9 @@ export default {
                       }
                       this.startUpload()
                     } else {
-                      file.globalId = res.data.slide.globalId
+                      file.globalId = mn.data.slide.globalId
                       this.fileList[this.fileIndex].globalId = file.globalId
-                      this.frontUpload(file, res.data.slide.objectKey, m => {
+                      this.frontUpload(file, mn.data.slide.objectKey, m => {
                         if (m === 100) {
                           this.fileIndex += 1
                           if (this.fileIndex === this.fileList.length) {
@@ -214,53 +388,9 @@ export default {
                       })
                     }
                   }
+                  
                 })
-              })
-            } else {
-              const data = {
-                fileName: file.fileName,
-                fileSize: file.size,
-                md5: res,
-                path: this.signatureData.path
               }
-              preCheck(this.apiObject.baseUrl + this.apiObject.prepUrl, data).then(res => {
-                const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
-                if (!res.data) {
-                  obj.message = res.message
-                  file.globalId = res.data.slide.globalId
-                  this.$set(this.fileList, this.fileIndex, obj)
-                  this.fileIndex += 1
-                  this.startUpload()
-                } else {
-                  if (res.data.hasUpload) {
-                    obj.message = '该切片已上传，请勿重复上传'
-                    obj.globalId = res.data.slide.globalId
-                    obj.filepath = res.data.slide.outerFilepath
-                    this.$set(this.fileList, this.fileIndex, obj)
-                    this.fileList[this.fileIndex].globalId = obj.globalId
-                    this.fileIndex += 1
-                    if (this.fileIndex === this.fileList.length) {
-                      const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
-                      this.$emit('getGlobalId', globalIdList)
-                    }
-                    this.startUpload()
-                  } else {
-                    file.globalId = res.data.slide.globalId
-                    this.fileList[this.fileIndex].globalId = file.globalId
-                    this.frontUpload(file, res.data.slide.objectKey, m => {
-                      if (m === 100) {
-                        this.fileIndex += 1
-                        if (this.fileIndex === this.fileList.length) {
-                          const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
-                          this.$emit('getGlobalId', globalIdList)
-                        }
-                        this.startUpload()
-                      }
-                    })
-                  }
-                }
-                
-              })
             }
           })
         }

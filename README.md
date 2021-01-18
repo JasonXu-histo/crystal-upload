@@ -15,11 +15,12 @@ Vue.use(CrystalUpload)
 # in components
 # development for dev   production for prod
 <template>
-  <crystal-upload mode="development" @getGlobalId="getGlobalId"></crystal-upload>
+  <crystal-upload mode="development" :needLocal="true" @getGlobalId="getGlobalId"></crystal-upload>
 </template>
 # config.js里process.env.ACCESS_ID  系统的标识 SMART_PATH for smartpath ...
 # token为当前系统登录获取的token存在本地存储里 
 # getGlobalId 方法会获取当前上传的切片的globalId的集合
+# needLocal 这个参数 在上传目的是本地服务的时候传true  其他（比如OSS）可以传false 或者不传
 <script>
   export default {
     name: 'Component',

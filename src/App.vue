@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <crystal-upload mode="development"></crystal-upload>
+    <crystal-upload mode="development" :needLocal="true"></crystal-upload>
   </div>
 </template>
 
