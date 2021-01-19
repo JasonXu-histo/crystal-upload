@@ -192,7 +192,7 @@ export default {
                     this.fileList[this.fileIndex].hasBind = obj.hasBind
                     this.fileIndex += 1
                     if (this.fileIndex === this.fileList.length) {
-                      const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId) { return nm.globalId}})))
+                      const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId && !nm.hasBind) { return nm.globalId}}))).filter(ele => !!ele)
                       this.$emit('getGlobalId', globalIdList)
                     }
                     this.startUpload()
@@ -246,7 +246,7 @@ export default {
                           file.state = 2
                           this.fileIndex += 1
                           if(this.fileIndex === this.fileList.length) {
-                            const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId && !nm.hasBind) { return nm.globalId}})))
+                            const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId && !nm.hasBind) { return nm.globalId}}))).filter(ele => !!ele)
                             this.$emit('getGlobalId', globalIdList)
                           }
                           this.startUpload()
@@ -295,7 +295,7 @@ export default {
                           file.state = 2
                           this.fileIndex += 1
                           if(this.fileIndex === this.fileList.length) {
-                            const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId && !nm.hasBind) { return nm.globalId}})))
+                            const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId && !nm.hasBind) { return nm.globalId}}))).filter(ele => !!ele)
                             this.$emit('getGlobalId', globalIdList)
                           }
                           this.startUpload()
@@ -331,7 +331,7 @@ export default {
                         this.fileList[this.fileIndex].globalId = obj.globalId
                         this.fileIndex += 1
                         if (this.fileIndex === this.fileList.length) {
-                          const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
+                          const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId))).filter(ele => !!ele)
                           this.$emit('getGlobalId', globalIdList)
                         }
                         this.startUpload()
@@ -342,7 +342,7 @@ export default {
                           if (m === 100) {
                             this.fileIndex += 1
                             if (this.fileIndex === this.fileList.length) {
-                              const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
+                              const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId))).filter(ele => !!ele)
                               this.$emit('getGlobalId', globalIdList)
                             }
                             this.startUpload()
@@ -376,7 +376,7 @@ export default {
                       this.fileList[this.fileIndex].globalId = obj.globalId
                       this.fileIndex += 1
                       if (this.fileIndex === this.fileList.length) {
-                        const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
+                        const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId))).filter(ele => !!ele)
                         this.$emit('getGlobalId', globalIdList)
                       }
                       this.startUpload()
@@ -387,7 +387,7 @@ export default {
                         if (m === 100) {
                           this.fileIndex += 1
                           if (this.fileIndex === this.fileList.length) {
-                            const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId)))
+                            const globalIdList = Array.from(new Set(this.fileList.map(nm => nm.globalId))).filter(ele => !!ele)
                             this.$emit('getGlobalId', globalIdList)
                           }
                           this.startUpload()
