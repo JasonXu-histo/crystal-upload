@@ -204,13 +204,14 @@ export default {
                         arr.push(i)
                       }
                       const newArr = arr.filter(item => !mn.data.partNumbers.includes(item + 1))
+                      const processItem = Math.round(100 / newArr.length * 100) / 100
                       axios.all(newArr.map(ele => {
-                        const start = (ele - 1) * this.slideSize
+                        const start = ele * this.slideSize
                         const end = Math.min(file.size, start + this.slideSize)
                         const formData = new FormData()
                         formData.append('file', file.file.slice(start, end))
                         formData.append('globalId', mn.data.globalId)
-                        formData.append('partNumber', ele)
+                        formData.append('partNumber', ele + 1)
                         let partSize = this.slideSize
                         if (ele === slideLength - 1) {
                           partSize = end - start
@@ -234,7 +235,8 @@ export default {
                       })).then(res => {
                         const params = {
                           globalId: file.globalId,
-                          result: 1
+                          result: 1,
+                          count: slideLength
                         }
                         localComplete(this.apiObject.baseUrl + this.apiObject.localCompleteUrl, params).then(res =>{
                           file.state = 2
@@ -251,7 +253,7 @@ export default {
                       for(let i = 0; i < slideLength; i ++) {
                         arr.push(i)
                       }
-                      const processItem = Math.round(100 / slideLength * 100) / 100
+                      const processItem = Math.round(100 / arr.length * 100) / 100
                       axios.all(arr.map(ele => {
                         const start = ele * this.slideSize
                         const end = Math.min(file.size, start + this.slideSize)
@@ -265,24 +267,25 @@ export default {
                         }
                         formData.append('partSize', partSize)
                         formData.append('startPos', start)
-                        return axios({
-                          url: this.apiObject.baseUrl + this.apiObject.localUploadUrl,
-                          method: 'post',
-                          data: formData,
-                          headers: {
-                            'Content-Type': 'multipart/form-data',
-                            'token': window.localStorage.getItem('crystal-token'),
-                            'access-id': window.localStorage.getItem('access-id')
-                          }
-                        }).then(res => {
-                          if(res.data.code === 200) {
-                            file.process += processItem
-                          }
-                        })
+                          return axios({
+                            url: this.apiObject.baseUrl + this.apiObject.localUploadUrl,
+                            method: 'post',
+                            data: formData,
+                            headers: {
+                              'Content-Type': 'multipart/form-data',
+                              'token': window.localStorage.getItem('crystal-token'),
+                              'access-id': window.localStorage.getItem('access-id')
+                            }
+                          }).then(res => {
+                            if(res.data.code === 200) {
+                              file.process += processItem
+                            }
+                          })
                       })).then(res => {
                         const params = {
                           globalId: file.globalId,
-                          result: 1
+                          result: 1,
+                          count: slideLength
                         }
                         localComplete(this.apiObject.baseUrl + this.apiObject.localCompleteUrl, params).then(res =>{
                           file.state = 2
