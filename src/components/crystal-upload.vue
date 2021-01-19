@@ -186,8 +186,10 @@ export default {
                   if (mn.data.hasUpload) {
                     obj.message = '该切片已上传，请勿重复上传'
                     obj.globalId = mn.data.globalId
+                    obj.hasBind = mn.data.hasBind
                     this.$set(this.fileList, this.fileIndex, obj)
                     this.fileList[this.fileIndex].globalId = obj.globalId
+                    this.fileList[this.fileIndex].hasBind = obj.hasBind
                     this.fileIndex += 1
                     if (this.fileIndex === this.fileList.length) {
                       const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId) { return nm.globalId}})))
@@ -196,7 +198,9 @@ export default {
                     this.startUpload()
                   } else {
                     file.globalId = mn.data.globalId
+                    file.hasBind = mn.data.hasBind
                     this.fileList[this.fileIndex].globalId = file.globalId
+                    this.fileList[this.fileIndex].hasBind = file.hasBind
                     const slideLength = Math.ceil(file.size / this.slideSize)
                     if (mn.data.partNumbers && mn.data.partNumbers.length > 0) {
                       let arr = []
@@ -242,7 +246,7 @@ export default {
                           file.state = 2
                           this.fileIndex += 1
                           if(this.fileIndex === this.fileList.length) {
-                            const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId) { return nm.globalId}})))
+                            const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId && !nm.hasBind) { return nm.globalId}})))
                             this.$emit('getGlobalId', globalIdList)
                           }
                           this.startUpload()
@@ -291,7 +295,7 @@ export default {
                           file.state = 2
                           this.fileIndex += 1
                           if(this.fileIndex === this.fileList.length) {
-                            const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId) { return nm.globalId}})))
+                            const globalIdList = Array.from(new Set(this.fileList.map(nm => {if (nm.globalId && !nm.hasBind) { return nm.globalId}})))
                             this.$emit('getGlobalId', globalIdList)
                           }
                           this.startUpload()
