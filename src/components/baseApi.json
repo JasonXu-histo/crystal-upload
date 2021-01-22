@@ -1,20 +1,8 @@
 {
-  "development": {
-    "baseUrl": "https://pathhub-test.hengdaomed.com/crystal/v1",
-    "prepUrl": "/slide/frontend/upload/prep",
-    "signatureUrl": "/open/resources/oss-signature",
-    "completeUrl": "/slide/frontend/upload/complete",
-    "localPrepUrl": "/slide/continuous/upload/prep",
-    "localUploadUrl": "/slide/continuous/upload",
-    "localCompleteUrl": "/slide/continuous/upload/complete"
-  },
-  "production": {
-    "baseUrl": "https://pathhub-test.hengdaomed.com/crystal/v1",
-    "prepUrl": "/slide/frontend/upload/prep",
-    "signatureUrl": "/open/resources/oss-signature",
-    "completeUrl": "/slide/frontend/upload/complete",
-    "localPrepUrl": "/slide/continuous/upload/prep",
-    "localUploadUrl": "/slide/continuous/upload",
-    "localCompleteUrl": "/slide/continuous/upload/complete"
-  }
+  "prepUrl": "/slide/frontend/upload/prep",
+  "signatureUrl": "/open/resources/oss-signature",
+  "completeUrl": "/slide/frontend/upload/complete",
+  "localPrepUrl": "/slide/continuous/upload/prep",
+  "localUploadUrl": "/slide/continuous/upload",
+  "localCompleteUrl": "/slide/continuous/upload/complete"
 }

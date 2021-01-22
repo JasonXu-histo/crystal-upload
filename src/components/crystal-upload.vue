@@ -45,14 +45,14 @@ import { getSignature, saveResourceInfo, preCheck, localPrepCheck, localComplete
 export default {
   name: 'CrystalUpload',
   props: {
-    mode: {
-      type: String,
-      required: true
-    },
     needLocal: {
       type: Boolean,
       required: false,
       default: false
+    },
+    baseUrl: {
+      type: String,
+      required: true
     }
   },
   data() {
@@ -99,7 +99,7 @@ export default {
   },
   computed: {
     apiObject() {
-      return api[this.mode]
+      return api
     }
   },
   mounted() {
@@ -147,7 +147,7 @@ export default {
       })
     },
     getSignatureAndUpload(file, key, callback) {
-      getSignature(this.apiObject.baseUrl + this.apiObject.signatureUrl).then(res => {
+      getSignature(this.baseUrl + this.apiObject.signatureUrl).then(res => {
         this.signatureData = res.data
         this.upload(file, key, m => {
           callback(m)
@@ -175,7 +175,7 @@ export default {
                 fileSize: file.size,
                 md5: res
               }
-              localPrepCheck(this.apiObject.baseUrl + this.apiObject.localPrepUrl, data).then(mn => {
+              localPrepCheck(this.baseUrl + this.apiObject.localPrepUrl, data).then(mn => {
                 const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
                 if (!mn.data) {
                   obj.message = mn.message
@@ -223,7 +223,7 @@ export default {
                         formData.append('partSize', partSize)
                         formData.append('startPos', start)
                         return axios({
-                          url: this.apiObject.baseUrl + this.apiObject.localUploadUrl,
+                          url: this.baseUrl + this.apiObject.localUploadUrl,
                           method: 'post',
                           data: formData,
                           headers: {
@@ -242,7 +242,7 @@ export default {
                           result: 1,
                           count: slideLength
                         }
-                        localComplete(this.apiObject.baseUrl + this.apiObject.localCompleteUrl, params).then(res =>{
+                        localComplete(this.baseUrl + this.apiObject.localCompleteUrl, params).then(res =>{
                           file.state = 2
                           this.fileIndex += 1
                           if(this.fileIndex === this.fileList.length) {
@@ -272,7 +272,7 @@ export default {
                         formData.append('partSize', partSize)
                         formData.append('startPos', start)
                           return axios({
-                            url: this.apiObject.baseUrl + this.apiObject.localUploadUrl,
+                            url: this.baseUrl + this.apiObject.localUploadUrl,
                             method: 'post',
                             data: formData,
                             headers: {
@@ -291,7 +291,7 @@ export default {
                           result: 1,
                           count: slideLength
                         }
-                        localComplete(this.apiObject.baseUrl + this.apiObject.localCompleteUrl, params).then(res =>{
+                        localComplete(this.baseUrl + this.apiObject.localCompleteUrl, params).then(res =>{
                           file.state = 2
                           this.fileIndex += 1
                           if(this.fileIndex === this.fileList.length) {
@@ -314,7 +314,7 @@ export default {
                     md5: res,
                     path: m.path
                   }
-                  preCheck(this.apiObject.baseUrl + this.apiObject.prepUrl, data).then(mn => {
+                  preCheck(this.baseUrl + this.apiObject.prepUrl, data).then(mn => {
                     const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
                     if (!mn.data) {
                       obj.message = mn.message
@@ -359,7 +359,7 @@ export default {
                   md5: res,
                   path: this.signatureData.path
                 }
-                preCheck(this.apiObject.baseUrl + this.apiObject.prepUrl, data).then(mn => {
+                preCheck(this.baseUrl + this.apiObject.prepUrl, data).then(mn => {
                   const obj = JSON.parse(JSON.stringify(this.fileList[this.fileIndex]))
                   if (!mn.data) {
                     obj.message = mn.message
@@ -404,7 +404,7 @@ export default {
       }
     },
     async getSignature() {
-      const res = await getSignature(this.apiObject.baseUrl + this.apiObject.signatureUrl)
+      const res = await getSignature(this.baseUrl + this.apiObject.signatureUrl)
       this.signatureData = res.data
       return res.data
     },
@@ -466,7 +466,7 @@ export default {
             globalId: file.globalId,
             result: 1
           }
-          saveResourceInfo(this.apiObject.baseUrl + this.apiObject.completeUrl, resourceInfo).then(() => {
+          saveResourceInfo(this.baseUrl + this.apiObject.completeUrl, resourceInfo).then(() => {
             file.process = 100
             file.state = 2
             file.filepath = data.url + '/' + data.key + '/' + data.name
@@ -479,7 +479,7 @@ export default {
             globalId: file.globalId,
             result: 0
           }
-          saveResourceInfo(this.apiObject.baseUrl + this.apiObject.completeUrl, resourceInfo).then(() => {
+          saveResourceInfo(this.baseUrl + this.apiObject.completeUrl, resourceInfo).then(() => {
             file.state = 3
           })
         }
@@ -488,7 +488,7 @@ export default {
           globalId: file.globalId,
           result: 0
         }
-        saveResourceInfo(this.apiObject.baseUrl + this.apiObject.completeUrl, resourceInfo).then(() => {
+        saveResourceInfo(this.baseUrl + this.apiObject.completeUrl, resourceInfo).then(() => {
           file.state = 3
         })
       })

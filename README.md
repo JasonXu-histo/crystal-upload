@@ -13,9 +13,8 @@ import CrystalUpload from 'crystal-upload'
 Vue.use(CrystalUpload)
 
 # in components
-# development for dev   production for prod
 <template>
-  <crystal-upload mode="development" :needLocal="true" @getGlobalId="getGlobalId"></crystal-upload>
+  <crystal-upload base-url="https://pathhub-test.histomed.com/v1/crystal..." :needLocal="true" @getGlobalId="getGlobalId"></crystal-upload>
 </template>
 # config.js里process.env.ACCESS_ID  系统的标识 SMART_PATH for smartpath ...
 # token为当前系统登录获取的token存在本地存储里 
